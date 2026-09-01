@@ -1,6 +1,7 @@
 const express = require("express");
 const app = express();
-const pool = require("./db")
+app.use(express.json());
+const pool = require("./db");
 
 const PORT = 3000;
 
@@ -25,6 +26,41 @@ app.get("/api/tickets", async (request, response) => {
         });
     }
 });
+
+app.post("/api/tickets", async(request, response) => {
+    try{
+        const{
+            customer_name,
+            device_type,
+            issue_description,
+            status = "Received"
+        } = request.body;
+        const result = await pool.query(
+            `INSERT INTO tickets (
+                customer_name,
+                device_type,
+                issue_description,
+                status
+            )
+            VALUES ($1, $2, $3, $4)
+            RETURNING *`,
+            [customer_name, device_type, issue_description, status]
+        );
+
+        response.status(201).json(result.rows[0]);
+        console.log("Ticket was succesfully created")
+        
+
+    }
+    catch (error){
+        console.error("Error creating ticket:", error);
+        response.status(500).json({
+            error: "Failed to create ticket"
+        });
+    }
+})
+
+
 
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
